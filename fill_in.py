@@ -5,6 +5,9 @@ Business card generator
 Call me from command line
 """
 
+RETURN_CODES = IO_ERR_TEMPLATE, IO_ERR_CSV = 0, 1
+
+
 LOGFORMAT = "[%(levelname)-10s] %(message)s"
 import logging
 logging.basicConfig(level=logging.INFO, format=LOGFORMAT)
@@ -52,7 +55,7 @@ def write_svg(row, template, out_prefix):
         logging.info("Wrote file: %s", out_name)
 
 
-def main(values):
+def main(parser, values):
     """
     Give it a dict with information, does the job.
     There are defaults.
@@ -66,14 +69,26 @@ def main(values):
     csv_file = values.get('csv_file', DEFAULT_CSV)
     output_prefix = values.get('output_prefix', DEFAULT_PREFIX)
 
-    with open(template_file, 'r', encoding='utf-8') as template_fd:
-        template = Template(template_fd.read())
-        logging.info("Loaded template %s.", template_file)
-    with open(csv_file, 'r', encoding='utf-8') as csv_fd:
-        reader = csv.reader(csv_fd)
-        for row in islice(reader, 1, None):  # skip 1st (title) row
-            logging.info("Got data for %s", " ".join(row[:2]))
-            write_svg(row, template, output_prefix)
+    try:
+        with open(template_file, 'r', encoding='utf-8') as template_fd:
+            template = Template(template_fd.read())
+    except IOError as err:
+        logging.error("Could'nt load template file '%s': %s\n", template_file, err)
+        parser.print_help()
+        return IO_ERR_TEMPLATE
+    else:
+        logging.info("Loaded template file '%s'.", template_file)
+
+    try:
+        with open(csv_file, 'r', encoding='utf-8') as csv_fd:
+            reader = csv.reader(csv_fd)
+            for row in islice(reader, 1, None):  # skip 1st (title) row
+                logging.info("Got data for %s", " ".join(row[:2]))
+                write_svg(row, template, output_prefix)
+    except IOError as err:
+        logging.error("Could'nt load csv file '%s': %s\n", csv_file, err)
+        parser.print_help()
+        return IO_ERR_CSV
 
 
 def _analyse_cmd():
@@ -85,8 +100,9 @@ def _analyse_cmd():
         help='default: data.csv')
     parser.add_argument('--output_prefix', default=DEFAULT_PREFIX)
     parser.add_argument('--template', default=DEFAULT_TEMPLATE)
-    return parser.parse_args(sys.argv[1:])
+    return parser, parser.parse_args(sys.argv[1:])
 
 
 if __name__ == '__main__':
-    main(vars(_analyse_cmd()))
+    parser, values = _analyse_cmd()
+    sys.exit(main(parser, vars(values)))
