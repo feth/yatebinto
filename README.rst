@@ -5,6 +5,11 @@ Yet another templating engine but I needed this one
 
 This is very suited for my SVG business cards.
 
+Dependencies
+------------
+
+Python 3.2. Period.
+
 Sample data
 -----------
 
