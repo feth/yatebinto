@@ -11,7 +11,8 @@ Call me from command line
  * http://sam.zoy.org/wtfpl/COPYING for more details. */
 """
 
-RETURN_CODES = IO_ERR_TEMPLATE, IO_ERR_CSV, IO_ERR_COMMON_CSV, DATA_ERR = 1, 2, 3, 4
+RETURN_CODES = SUCCESS, IO_ERR_TEMPLATE, IO_ERR_CSV, \
+    IO_ERR_COMMON_CSV, DATA_ERR = range(5)
 
 
 LOGFORMAT = "[%(levelname)-10s] %(message)s"
@@ -155,15 +156,44 @@ def process(parser, values):
         return IO_ERR_CSV
     except MissingData:
         return DATA_ERR
+    return SUCCESS
+
+
+DESCRIPTION = """\
+This program generates enveloppes for mailings, business cards or whatever.
+---------------------------------------------------------------------------
+
+It reads
+ - a template file (for instance an SVG)
+    in which field names are prefixed with '$'.
+ - a CSV data file
+    for every line of which a file will be generated.
+ - (optional) a CSV default data file
+    default values for the fields may the be specified there."""
+
+PROGRAM_INFO = """Return codes:
+    0: success
+    1: error reading the template
+    2: error reading csv individual data
+    3: error reading csv common data
+    4: error in data (missing data for a field for instance)
+
+Distribution and usage under WTFPL (see COPYING).
+
+See README.rst for more information."""
 
 
 def _analyse_cmd():
     """
     Parse CLI args
     """
-    parser = argparse.ArgumentParser(description='Generates business cards.')
+    parser = argparse.ArgumentParser(\
+    description=DESCRIPTION,
+    epilog=PROGRAM_INFO,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument('--common-input', default=None,
-        help='default: None. First line must contain template variables..')
+        help='default: None. First line must contain template variables.')
     parser.add_argument('--input', default=DEFAULT_CSV,
         help='''default: data.csv. First line must contain template variables.
         Can override --common_input.
